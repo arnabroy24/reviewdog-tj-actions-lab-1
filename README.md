@@ -5,9 +5,10 @@ This private workshop repository demonstrates the `pull_request_target` attack p
 The repo intentionally keeps the vulnerable control flow active:
 
 1. A maintainer workflow accepts a forked pull request.
-2. The workflow checks out contributor-controlled code.
-3. A build step executes a contributor-controlled script such as `mvnw`.
+2. The workflow checks out contributor-controlled code from the fork.
+3. A normal-looking build step runs `bash ./mvnw -B verify`.
 4. Because the workflow runs under `pull_request_target`, a canary secret from the base repository is visible to the script.
+5. The workflow uploads a local artifact named `simulated-incident-evidence`, modeling how collected material could be retrieved from the workflow run.
 
 The enabled workflow is `.github/workflows/pull_request_target-vulnerable.yml`.
 
@@ -49,20 +50,46 @@ Recommended repository settings:
 
    echo "SIMULATED_ATTACK_CONTROL_REACHED"
    echo "The pull request changed mvnw, and CI executed it."
+   echo "The command looked like a normal build: $*"
+
+   mkdir -p .rca-demo
+   evidence_file=".rca-demo/evidence.txt"
+
+   {
+     echo "simulated_stage=initial-pr-compromise"
+     echo "attacker_control=true"
+     echo "base_repository=${BASE_REPOSITORY:-unknown}"
+     echo "head_repository=${HEAD_REPOSITORY:-unknown}"
+     echo "head_sha=${HEAD_SHA:-unknown}"
+     echo "pr_number=${PR_NUMBER:-unknown}"
+   } > "$evidence_file"
 
    if [[ -n "${PAT_TO_FORK:-}" ]]; then
      echo "PAT_TO_FORK_VISIBLE=true"
      echo "PAT_TO_FORK_LENGTH=${#PAT_TO_FORK}"
-     printf "%s" "$PAT_TO_FORK" | sha256sum | awk '{ print "PAT_TO_FORK_SHA256_PREFIX=" substr($1, 1, 16) }'
+     {
+       echo "canary_secret_present=true"
+       echo "canary_secret_length=${#PAT_TO_FORK}"
+       printf "%s" "$PAT_TO_FORK" | sha256sum | awk '{ print "canary_secret_sha256_prefix=" substr($1, 1, 16) }'
+     } >> "$evidence_file"
    else
      echo "PAT_TO_FORK_VISIBLE=false"
+     echo "canary_secret_present=false" >> "$evidence_file"
    fi
+
+   cat >> "$evidence_file" <<'EOT'
+simulated_stage_2=would_invite_disposable_user_or_push_workflow
+simulated_stage_3=would_reuse_maintainer_token_against_related_repo
+simulated_stage_4=would_move_trusted_tag_to_malicious_commit
+external_exfiltration=false
+EOT
    ```
 
 4. Push the branch and open a pull request back to the private base repository.
 5. Watch the `Vulnerable pull_request_target lab` workflow logs.
 6. Confirm the log contains `SIMULATED_ATTACK_CONTROL_REACHED`.
 7. Confirm the log contains `PAT_TO_FORK_VISIBLE=true`.
+8. Download the `simulated-incident-evidence` workflow artifact and inspect `evidence.txt`.
 
 That marker shows that contributor-controlled code reached CI execution and could read the canary secret. In the real incident, that same class of mistake exposed useful maintainer-context credentials.
 

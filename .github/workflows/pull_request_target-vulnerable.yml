@@ -7,15 +7,20 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: read
 
 jobs:
   vulnerable-build:
-    name: Vulnerable fork PR build
+    name: Validate Maven project
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     env:
       PAT_TO_FORK: ${{ secrets.PAT_TO_FORK }}
+      BASE_REPOSITORY: ${{ github.repository }}
+      HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
 
     steps:
       - name: Check out contributor-controlled pull request head
@@ -24,6 +29,13 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Execute contributor-controlled wrapper
-        run: bash ./mvnw --version
+      - name: Validate with Maven wrapper
+        run: bash ./mvnw -B verify
 
+      - name: Upload simulated incident evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulated-incident-evidence
+          path: .rca-demo/evidence.txt
+          if-no-files-found: warn
