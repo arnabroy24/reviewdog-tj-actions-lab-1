@@ -1,0 +1,29 @@
+name: Vulnerable pull_request_target lab
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  vulnerable-build:
+    name: Vulnerable fork PR build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      PAT_TO_FORK: ${{ secrets.PAT_TO_FORK }}
+
+    steps:
+      - name: Check out contributor-controlled pull request head
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Execute contributor-controlled wrapper
+        run: bash ./mvnw --version
+
