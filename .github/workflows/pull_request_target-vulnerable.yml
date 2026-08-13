@@ -28,6 +28,9 @@ jobs:
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
+          # Required for this intentionally vulnerable RCA lab. Never enable
+          # this when a pull_request_target workflow handles untrusted code.
+          allow-unsafe-pr-checkout: true
 
       - name: Validate with Maven wrapper
         run: bash ./mvnw -B verify
