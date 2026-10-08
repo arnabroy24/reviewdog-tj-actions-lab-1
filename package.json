@@ -1,0 +1,15 @@
+{
+  "name": "reviewdog-tj-actions-rca-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline, synthetic RCA lab for the reviewdog / tj-actions GitHub Actions supply-chain compromise",
+  "type": "commonjs",
+  "scripts": {
+    "analyze": "node scripts/analyze-incident.js",
+    "render-attack": "node scripts/render-attack-surface.js",
+    "test": "node scripts/test-analyzer.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,33 @@
+# Hardened comparison - documentation only (the .txt suffix keeps GitHub
+# Actions from loading it). External contributions run unprivileged, with no
+# base-repo secrets in the job environment.
+
+name: Hardened example - unprivileged Maven verify (DOC ONLY)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the pull request head (unprivileged context)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Validate with Maven wrapper (no secrets in the environment)
+        run: bash ./mvnw -B verify
+
+# Why this is safe: under pull_request, the fork's mvnw runs in the
+# contributor's own unprivileged context with an ephemeral, read-only token -
+# the wrapper swap executes, but there is nothing to steal and no trusted
+# authority to borrow. If a maintainer-context step is genuinely needed (for
+# example commenting on the PR), split it into a separate metadata-only
+# pull_request_target job that never checks out PR content, as shown in the
+# Shai-Hulud lab's secure-example/reviewer-workflow.yml.

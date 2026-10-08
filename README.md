@@ -97,6 +97,18 @@ The important relationship is that the workflow belongs to the original reposito
 
 That marker shows that contributor-controlled code reached CI execution and could read the canary secret. In the real incident, that same class of mistake exposed useful maintainer-context credentials.
 
+## Run the lab (offline analysis)
+
+Requirements: Node.js 18 or newer. No dependencies are required.
+
+```bash
+npm run analyze
+npm run render-attack
+npm test
+```
+
+`npm run analyze` reads `fixtures/incident.json` (case `REVIEWDOG-TJ-ACTIONS-MOCK-2024-11`) and prints the reconstructed timeline, detected indicators, and control failures. The analyzer treats all fixture values as data. A guided ten-minute walkthrough is in [docs/lab-walkthrough.md](docs/lab-walkthrough.md); the ungated and hardened workflow excerpts live in `examples/`.
+
 ## Source Notes
 
 - Narrative: [reviewdog_tj-actions.md](reviewdog_tj-actions.md)

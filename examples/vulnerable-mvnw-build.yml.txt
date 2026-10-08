@@ -1,0 +1,46 @@
+# DO NOT ENABLE THIS FILE - documentation excerpt only (the .txt suffix keeps
+# GitHub Actions from loading it). This is the ungated form of the
+# reviewdog / tj-actions pattern kept outside the active workflow directory.
+
+name: RCA lab - ungated vulnerable Maven verify (DOC ONLY)
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  vulnerable-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PAT_TO_FORK: ${{ secrets.PAT_TO_FORK }}
+    steps:
+      - name: Check out contributor-controlled pull request head
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+
+      - name: Validate with Maven wrapper
+        run: bash ./mvnw -B verify
+
+# Root cause: the workflow belongs to the base repository and runs with its
+# authority, but the wrapper it executes comes from the fork head. A PR that
+# swaps mvnw for a probe gets it run inside the trusted job, with the
+# long-lived PAT_TO_FORK secret sitting in the environment. In the real
+# incident that secret was a maintainer's PAT with cross-repository reach,
+# which the attacker reused to move trusted action tags and rewrite
+# tj-actions/changed-files - printing consumer secrets to CI logs downstream.
+#
+# RCA findings:
+# 1. fork-owned wrapper executed in a privileged pull_request_target job
+# 2. long-lived credential exposed to PR-controlled code (then reused across
+#    repositories, pivoting into tag hijack and downstream compromise)
+#
+# Fixed comparison: examples/hardened-mvnw-build.yml.txt (pull_request trigger,
+# read-only permissions, no secrets in the job environment).

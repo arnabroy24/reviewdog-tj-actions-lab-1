@@ -1,0 +1,126 @@
+{
+  "metadata": {
+    "caseId": "REVIEWDOG-TJ-ACTIONS-MOCK-2024-11",
+    "source": "Synthetic training telemetry; values are not real credentials",
+    "timezone": "UTC"
+  },
+  "attackSurface": {
+    "event": "pull_request_target",
+    "interpolatedFields": [
+      "github.event.pull_request.head.repo.full_name",
+      "github.event.pull_request.head.sha"
+    ],
+    "sinks": [
+      "Fork-owned Maven wrapper executed by bash ./mvnw -B verify inside the privileged build job",
+      "Long-lived canary token present in the privileged job environment"
+    ]
+  },
+  "events": [
+    {
+      "time": "2024-11-28T09:45:13Z",
+      "source": "github.audit",
+      "action": "workflow.pat_substitution",
+      "actor": "maintainer",
+      "detail": "Workflow secret changed from the ephemeral GITHUB_TOKEN to a long-lived personal access token to work around CI friction"
+    },
+    {
+      "time": "2024-11-28T10:05:00Z",
+      "source": "github.audit",
+      "action": "pr.wrapper_modified",
+      "actor": "external-contributor",
+      "detail": "Pull request modified the Maven wrapper (mvnw) that the privileged build job later invokes"
+    },
+    {
+      "time": "2024-11-28T10:07:00Z",
+      "source": "ci.network",
+      "action": "build.wrapper_execution",
+      "actor": "build-runner",
+      "detail": "bash ./mvnw -B verify executed the fork-owned wrapper, which attempted to fetch a remote payload; request was simulated and blocked"
+    },
+    {
+      "time": "2024-12-02T08:10:00Z",
+      "source": "github.audit",
+      "action": "pat.reuse",
+      "actor": "maintainer-bot",
+      "detail": "The same personal access token was reused to invite a disposable collaborator to a related repository"
+    },
+    {
+      "time": "2024-12-02T08:12:00Z",
+      "source": "github.audit",
+      "action": "repo.collaborator_add",
+      "actor": "disposable-user",
+      "detail": "Disposable collaborator added to the related repository using the misused token"
+    },
+    {
+      "time": "2024-12-02T08:15:00Z",
+      "source": "github.audit",
+      "action": "workflow.push_and_delete",
+      "actor": "disposable-user",
+      "detail": "Malicious workflow pushed on a short-lived branch and the branch deleted immediately after the run started"
+    },
+    {
+      "time": "2024-12-02T08:16:00Z",
+      "source": "ci.artifact",
+      "action": "secret.artifact_egress",
+      "actor": "malicious-runner",
+      "detail": "All repository secrets stringified, symmetrically encrypted, wrapped with a hard-coded public key, and uploaded as a workflow artifact for retrieval"
+    },
+    {
+      "time": "2024-12-05T11:00:00Z",
+      "source": "github.audit",
+      "action": "tag.rewrite",
+      "actor": "maintainer-bot",
+      "detail": "Trusted v1 tag of a setup action moved to a malicious commit originating from a disposable fork"
+    },
+    {
+      "time": "2025-02-14T09:30:00Z",
+      "source": "ci.network",
+      "action": "consumer.secret_log_print",
+      "actor": "composite-runner",
+      "detail": "Composite-action pivot executed the hijacked setup action inside another project's CI and exposed that project's runner token"
+    },
+    {
+      "time": "2025-03-13T20:00:00Z",
+      "source": "github.audit",
+      "action": "tag.rewrite",
+      "actor": "automation-bot",
+      "detail": "All existing tags of the changed-files action rewritten to a malicious commit, executing in every consumer's CI"
+    },
+    {
+      "time": "2025-03-13T20:36:02Z",
+      "source": "github.audit",
+      "action": "repo.targeted_fork",
+      "actor": "disposable-user",
+      "detail": "Disposable account forked a high-value target repository whose workflows referenced the rewritten action tag"
+    },
+    {
+      "time": "2025-03-19T18:28:00Z",
+      "source": "org.security",
+      "action": "response.disclosure",
+      "actor": "external-researcher",
+      "detail": "Third-party researcher disclosed the chain; maintainers removed the vulnerable workflow and rotated credentials"
+    }
+  ],
+  "package": {
+    "name": "tj-actions/changed-files",
+    "version": "v39-mock",
+    "installScript": "runner: index.js",
+    "status": "synthetic affected-tag fixture"
+  },
+  "hostIndicators": [
+    "pull_request_target build executing a wrapper script modified in the PR",
+    "remote-fetch attempts inside Maven wrapper execution",
+    "workflow runs from branches deleted immediately after start",
+    "encrypted artifacts of unexpected origin",
+    "tag move events on setup and changed-files actions",
+    "consumer workflow logs printing secret material"
+  ],
+  "expectedFindings": [
+    "long-lived PAT in workflow secrets",
+    "fork-owned build wrapper executed in privileged job",
+    "credential reuse across repositories",
+    "malicious workflow push with deleted-branch exfiltration",
+    "trusted tag hijack",
+    "downstream consumer compromise"
+  ]
+}
